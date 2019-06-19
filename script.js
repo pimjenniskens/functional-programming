@@ -5,18 +5,28 @@ var margin = {
     left: 40
   },
 
+
+// Define the canvas dimensions, so data is transformed to the canvas instead of the other way around.
   width = 960 - margin.left - margin.right,
   height = 500 - margin.top - margin.bottom;
 
-// set the dimensions of the axis
-var x = d3.scaleBand().range([0, width]).padding(.2);
+
+// Define how the data (domain) needs to be transformed into a new interval (range)
+var x = d3.scaleBand().range([0, width]).padding(.4);
 var y = d3.scaleLinear().range([height, 0]);
 
 
+// create necessary variables 
 var data = [];
+var dataSteden = [];
+var dataHotels = [];
+var dataSterrenBedden = [];
+
 var bedden;
 var maxHotels = 10;
 
+
+// Init loads the first visualisation state. 'Bedden' will be shown.
 function init() {
 
   bedden = true;
@@ -25,13 +35,17 @@ function init() {
   loadData('beds', 10, "Aantal bedden:");
 }
 
+// Create EventListers to make sure data can be modified when a button is pressed.
 function setEventListeners() {
 
   //Change data on button trigger 'click'
   d3.select('.trigger-button').on('click', 
     function () 
     {
+
+      // Remove and exit the current data in the svg
       reset();
+
       if (bedden == true)
       {
         showData('stars', 10, "Aantal sterren");
@@ -67,7 +81,7 @@ function reset() {
 
 
 function loadData(type, maxHotels, textLabel) {
-  //Select textfile hotels.txt and store it's value in variable text
+  //Select textfile hotels.txt and store it's value in variable text. applyData() to make the text readable and showData() to fill the initial svg with the cleaned data.
   d3.text('hotels.txt').get(function(err,text)
   {
     applyData(err, text);
@@ -75,7 +89,7 @@ function loadData(type, maxHotels, textLabel) {
     });
 }
 
-// Utility function to return a kist of x random integers
+// Utility function to return a list of x random integers
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
@@ -111,28 +125,40 @@ function applyData(err, text) {
   // I will map the data to objects containing three elements: star, rooms, name. I will filter all the unnecessary elements from the dataset.
   // Make a var filled with all the wanted objects.
   var mapped = parsed
-    .filter(
+  
+  // Search for data with the matching conditions to be added to 'mapped'
+  .filter(
       function (row)
       {
-        currentHotel++;
+        if (row['plaats'].replace(/^\s+|\s+$/gm,'')=='')
+          return false;
+        else
+          return true;
+
+/*        return (row['plaats']!='');
+          return !(row['plaats']=='');
+          currentHotel++;
+        
+        // Find out if the current row is corresponding with the numbers defined in var arr. 
         if (arr.indexOf(currentHotel) != -1) {
           return true;
         } else {
           return false;
         }
         // of dit: return (arr.indexOf(currentHotel)!=-1);
-        // runs for each value in the array and only returns the values star & rooms.
+  */    
       }
     )
     .map(
       function (row) 
       {
-
+    // runs for each value in the array and only returns the values stars rooms, name and beds.
         return {
           stars: row['sterklasse NHC 2012'],
           rooms: row['aantal kamers in 2012'],
           name: row['hotel naam in 2012'],
-          beds: row['aantal bedden in 2012']
+          beds: row['aantal bedden in 2012'],
+          plaats: row['plaats']
         }
       }
     )
@@ -141,19 +167,13 @@ function applyData(err, text) {
 
   data = mapped;
 
-  //Group the data by name and values
-  data = d3.nest()
-    .key(function (d) {
-      return d.name;
-    })
-    .entries(data)
-
-    .map(function (group) {
+/*    .map(function (group) {
       return {
         id: group.key,
         values: group.values
       };
-    });
+    })
+ */
 
   console.log(data);
 }
@@ -161,17 +181,36 @@ function applyData(err, text) {
 
 function showData(type, maxHotels, textLabel) {
 
-  //Variable with the index of the array with data
-  var index = 0;
+  // Summarize the number of hotels per city
+  // [ { key: "PLAATS", value: aantal} ]
+  var dataSteden = d3.nest()
+    .key(function (d) {
+      return d.plaats;
+    })
+    .rollup (function(v) {
+      return v.length;
+    })
+    .entries(data);
+
+  dataSteden.sort(function(a,b) {
+    if (a.key<b.key)
+      return -1;
+    else if (a.key>b.key)
+      return 1;
+    else
+      return 0;
+  });
+  
+  console.log(dataSteden);
 
   // Scale the range of the data in the domains
-  x.domain(data.map(function (d) {
-    return d.values[index].name;
+  x.domain(dataSteden.map(function (d) {
+    return d.key;
   }));
   // parseInt (+) changed string to int, so it becomes a number
-  y.domain([0, d3.max(data, function (d) {
+  y.domain([0, d3.max(dataSteden, function (d) {
 
-    return parseInt(d.values[index][type]);
+    return parseInt(d.value);
 
   })]);
 
@@ -193,11 +232,11 @@ function showData(type, maxHotels, textLabel) {
 
   // append the rectangles for the bar chart
   svg.selectAll(".bar")
-    .data(data)
+    .data(dataSteden)
     .enter().append("rect")
     .attr("class", "bar")
     .attr("x", function (d) {
-      return x(d.values[index].name);
+      return x(d.key);
     })
     .attr("width", x.bandwidth())
     .attr("y", height)
@@ -205,7 +244,7 @@ function showData(type, maxHotels, textLabel) {
 
     //Tool-tip
     .on("mouseover", function (d) {
-      tooltip.text(textLabel + ":" + " " + d.values[index][type]);
+      tooltip.text(" Aantal hotels:" + " " + d.value);
       tooltip.style("visibility", "visible");
     })
     //Folows cursor
@@ -221,10 +260,10 @@ function showData(type, maxHotels, textLabel) {
     .transition()
     .duration(500)
     .attr("y", function (d) {
-      return y(d.values[index][type]);
+      return y(d.value);
     })
     .attr("height", function (d) {
-      return height - y(d.values[index][type]);
+      return height - y(d.value);
     })
 
   // add the x Axis
