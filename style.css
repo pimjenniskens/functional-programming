@@ -1,0 +1,77 @@
+body {
+    font-family: "avenir next";
+    background-image: url(img/background.png);
+    background-size: cover;
+    font-size: 1em;
+    background-repeat: no-repeat;
+    color #41525B;
+}
+
+section {
+    float: right;
+    margin-right: 2%;
+    margin-top: 5%;
+}
+
+h1{
+    position: absolute;
+    width: 25%;
+    margin-top: 10rem;
+    margin-left: 2rem;
+}
+
+h2 {
+    position: absolute;
+    width: 25%;
+    margin-top: 17rem;
+    margin-left: 2rem;
+    font-weight: 400;
+    font-size: 1.2em;
+}
+
+p {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    font-size: .4em;
+}
+
+
+.tool-tip {
+    position: absolute;
+    visibility: hidden;
+    color: #fff;
+    padding: 8px;
+    background-color: #44B188;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: sans-serif;
+}
+
+.bar {
+    fill: #1F7353;
+}
+
+.trigger-button {
+background-color: #45b188;
+padding: 10px 30px 10px 30px;
+border-radius: 25px;
+border: none;
+font-size: 1em;
+color: white;
+position: absolute;
+margin-top: 24rem;
+margin-left: 2rem;
+}
+
+.random-button {
+    background-color: #45b188;
+    padding: 10px 20px 10px 20px;
+    border-radius: 25px;
+    border: none;
+    font-size: 1em;
+    color: white;
+    position: absolute;
+    margin-top: 24rem;
+    margin-left: 9rem;
+    }
