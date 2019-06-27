@@ -17,7 +17,7 @@ The given data resulted in a .txt file which I had to clean and transform to mak
 - Map the data to return the necessary values in a new data array.
 
 ## Graph
-The next step is to create a generic graph function (`createGraph()`) which can be used multiple times to show different data states. At first I made three different graphs to make sure every state was working, which I then later rewrote to one generic function to create the graph basics. 
+The next step is to create a generic graph using `d3.js` (`createGraph()`) which can be used multiple times to show different data states. At first I made three different graphs to make sure every state was working, which I then later rewrote to one generic function to create the graph basics. 
 
 ### Important decisions in the graph funcion
 - Provide `createGraph()` with the necessary generic paramaters (`dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rotation`), used for every three states
