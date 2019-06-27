@@ -203,7 +203,7 @@ function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rota
     .attr("height", 0)
 
     .transition()
-    .duration(500)
+    .duration(900)
     .attr("y", function (d) {
       return y(d.value);
     })
@@ -243,7 +243,7 @@ function showCityData() {
   d3.select(".back-button")
     .style("opacity", "0");
 
-  // Group the data by city and count the number fo hotels per city (rollup)
+  // Group the data by city and count the number of hotels per city (rollup)
   var dataSteden = d3.nest()
     .key(function (d) {
       return d.city;
@@ -265,7 +265,7 @@ function showStarData(city) {
   d3.select(".back-button")
   .style("opacity", "1");
 
-  // Filter the data so only the data for the aselected city remains
+  // Filter the data so only the data for the selected city remains
   var dataCity = data.filter(function(el) { 
     return (el.city == city);
   });
