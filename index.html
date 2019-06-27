@@ -10,17 +10,24 @@
     <!-- <link rel="stylesheet" href="style.css"> -->
 </head>
 <body>
-<h1>Hotels & Sterren in Amsterdam</h1>
-<h2>Showing you the data of 10 random hotels in Amsterdam, how many rooms they have and what their starrate is.</h2>
+<div class="content">    
+<h1>Hotels in the metropolitan region of Amsterdam 2012</h1>
+<h2>Showing you the data of all hotels in the metropolitan region Amsterdam. You can filter the data by city and stars. 
+<br><br>
+Start filtering the data by clicking the bars</h2>
 
-<!-- <svg width="1400" height="200"></svg> -->
-<section></section>
-<div class="stars"></div>
-<button id="button-label" class="trigger-button">Stars</button>
-<button id="button-refresh" class="random-button">10 new hotels</button>
-
-
+<!-- <button id="button-label" class="trigger-button">Stars</button> -->
+<button id="button-back" class="back-button">Go back</button>
 <p>Data naar: https://data.amsterdam.nl/#?dte=dcatd%2Fdatasets%2Fhotels_in_metropoolregio_amsterdam&dtfs=T&dsf=groups::toerisme-cultuur&mpb=topografie&mpz=11&mpv=52.3731081:4.8932945</p>
+</div>
+
+<h2 id="title">Cities in the metropolitan region of Amsterdam</h2>
+<section></section>
+
+
+
+
+
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="script.js"></script>
 

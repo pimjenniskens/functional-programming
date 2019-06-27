@@ -7,72 +7,52 @@ var margin = {
 
 
 // Define the canvas dimensions, so data is transformed to the canvas instead of the other way around.
-  width = 960 - margin.left - margin.right,
+  width = 1000 - margin.left - margin.right,
   height = 500 - margin.top - margin.bottom;
 
 
 // Define how the data (domain) needs to be transformed into a new interval (range)
-var x = d3.scaleBand().range([0, width]).padding(.4);
+var x = d3.scaleBand().range([0, width]).padding(0.1);
 var y = d3.scaleLinear().range([height, 0]);
 
 
 // create necessary variables 
 var data = [];
-var dataSteden = [];
-var dataHotels = [];
-var dataSterrenBedden = [];
+var state = 0;
+var currentCity = "";
 
-var bedden;
-var maxHotels = 10;
-
-
-// Init loads the first visualisation state. 'Bedden' will be shown.
+// Init loads the first visualisation state. Number of hotels per city will be shown.
 function init() {
 
-  bedden = true;
-
-  setEventListeners();
-  loadData('beds', 10, "Aantal bedden:");
+  setEventListener();
+  loadData();
 }
 
 // Create EventListers to make sure data can be modified when a button is pressed.
-function setEventListeners() {
+function setEventListener() {
 
-  //Change data on button trigger 'click'
-  d3.select('.trigger-button').on('click', 
+  //Go back one state, when button is clicked.
+  d3.select('.back-button').on('click', 
     function () 
     {
-
-      // Remove and exit the current data in the svg
-      reset();
-
-      if (bedden == true)
+      console.log(state);
+      if (state == 1)
       {
-        showData('stars', 10, "Aantal sterren");
-        bedden = false;
-        document.getElementById("button-label").innerHTML = "Beds";
-      } 
-      else 
+          reset();
+          showCityData();
+      }
+      else if (state == 2)
       {
-        showData('beds', 10, "Aantal bedden:");
-        bedden = true;
-        document.getElementById("button-label").innerHTML = "Stars";
+          reset();
+          showStarData(currentCity);
       }
     }
   )
-
-  // Reload page -> show 10 random hotels
-  document.getElementById("button-refresh").addEventListener("click", 
-    function ()
-    {
-      window.location.reload();
-    }
-  );
-
 }
 
 function reset() {
 
+  // Kill the svg to make room for a new graph
   d3.select('section').selectAll('svg')
     .remove()
     .exit();
@@ -80,119 +60,75 @@ function reset() {
 }
 
 
-function loadData(type, maxHotels, textLabel) {
-  //Select textfile hotels.txt and store it's value in variable text. applyData() to make the text readable and showData() to fill the initial svg with the cleaned data.
+function loadData() {
+  // Select textfile hotels.txt and store it's value in variable text. 
+  // Callback function will transform the data and show the initial graph
   d3.text('hotels.txt').get(function(err,text)
   {
-    applyData(err, text);
-    showData(type, maxHotels, textLabel);
+    // Prepare the loaded data to be usable in d3.js
+    prepareData(err, text);
+
+    // Initial graph, show the amount of hotels per city
+    showCityData();
     });
 }
 
-// Utility function to return a list of x random integers
-function getRandomInt(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
-}
-
-function getRandomInts(parsed, num) {
-  var ints = [];
-  while (ints.length < num) {
-    var randNum = getRandomInt(1, parsed.length);
-    if (ints.indexOf(randNum) == -1 && parsed[randNum-1].nummer!='') {
-      ints.push(randNum);
-    }
-  }
-  return ints;
-}
-
 // start formatting data (if 'text' can't be found -> throw error)
-function applyData(err, text) {
+function prepareData(err, text) {
 
   if (err) throw err;
 
-  // Because de dataset uses ';' instead of comma's, we can't use csv (comma separated values), but we have to use dsv (delimiter separated values).
+  // Because the dataset uses ';' instead of comma's, we can't use csv (comma separated values), but we have to use dsv (delimiter separated values).
   var parser = d3.dsvFormat(';');
 
-  // var met parsed data obv parser. 
+  // var with parsed data 
   var parsed = parser.parse(text);
-
-  var arr = getRandomInts(parsed, 10);
-  console.log(arr);
-
-  // start counting @
-  var currentHotel = 0;
 
   // I will map the data to objects containing three elements: star, rooms, name. I will filter all the unnecessary elements from the dataset.
   // Make a var filled with all the wanted objects.
-  var mapped = parsed
-  
-  // Search for data with the matching conditions to be added to 'mapped'
-  .filter(
-      function (row)
-      {
-        if (row['plaats'].replace(/^\s+|\s+$/gm,'')=='')
-          return false;
-        else
-          return true;
-
-/*        return (row['plaats']!='');
-          return !(row['plaats']=='');
-          currentHotel++;
-        
-        // Find out if the current row is corresponding with the numbers defined in var arr. 
-        if (arr.indexOf(currentHotel) != -1) {
-          return true;
-        } else {
-          return false;
+  var mapped = parsed  
+    // Search for data with the matching conditions to be added to 'mapped'
+    .filter(
+        function (row)
+        {
+          // remove items that have an empty city
+          if (row['plaats'].replace(/^\s+|\s+$/gm,'')=='')
+            return false;
+          else
+            return true;
         }
-        // of dit: return (arr.indexOf(currentHotel)!=-1);
-  */    
-      }
-    )
-    .map(
-      function (row) 
-      {
-    // runs for each value in the array and only returns the values stars rooms, name and beds.
-        return {
-          stars: row['sterklasse NHC 2012'],
-          rooms: row['aantal kamers in 2012'],
-          name: row['hotel naam in 2012'],
-          beds: row['aantal bedden in 2012'],
-          plaats: row['plaats']
+      )
+      .map(
+        function (row) 
+        {
+          // runs for each value in the array and only returns the values stars rooms, name and city.
+          return {
+            stars: row['sterklasse NHC 2012'],
+            rooms: row['aantal kamers in 2012'],
+            name: row['hotel naam in 2012'],
+            city: row['plaats']
+          }
         }
-      }
-    )
+      )
 
-  // console.log(text);
-
+  // This is the data we're going to use for all graphs
   data = mapped;
 
-/*    .map(function (group) {
-      return {
-        id: group.key,
-        values: group.values
-      };
-    })
- */
-
+  // Output to console to see if we're done it correctly
   console.log(data);
 }
 
+function titleCase(value) {
+  return value.charAt(0).toUpperCase() + value.substr(1).toLowerCase();
+}
 
-function showData(type, maxHotels, textLabel) {
+function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rotation) {
 
-  // Summarize the number of hotels per city
-  // [ { key: "PLAATS", value: aantal} ]
-  var dataSteden = d3.nest()
-    .key(function (d) {
-      return d.plaats;
-    })
-    .rollup (function(v) {
-      return v.length;
-    })
-    .entries(data);
+  // Shows the data we're using for this graph on the console
+  console.log(dataGraph);
 
-  dataSteden.sort(function(a,b) {
+  // Sort aray in place by key
+  dataGraph.sort(function(a,b) {
     if (a.key<b.key)
       return -1;
     else if (a.key>b.key)
@@ -200,20 +136,17 @@ function showData(type, maxHotels, textLabel) {
     else
       return 0;
   });
-  
-  console.log(dataSteden);
 
   // Scale the range of the data in the domains
-  x.domain(dataSteden.map(function (d) {
+  x.domain(dataGraph.map(function (d) {
     return d.key;
   }));
-  // parseInt (+) changed string to int, so it becomes a number
-  y.domain([0, d3.max(dataSteden, function (d) {
 
-    return parseInt(d.value);
-
+  // Scale the range of the y-as to the maximum value in the dataset
+  y.domain([0, d3.max(dataGraph, function (d) {
+    return d.value;
+    // return (d.value>50?50:d.value);
   })]);
-
 
   // append the svg object to the body of the page
   var svg = d3.select("section").append("svg")
@@ -225,14 +158,14 @@ function showData(type, maxHotels, textLabel) {
     .attr("transform",
       "translate(" + margin.left + "," + margin.top + ")");
 
+  // Create the tooltip
   var tooltip = d3.select("section")
     .append("div")
     .attr("class", "tool-tip");
 
-
   // append the rectangles for the bar chart
   svg.selectAll(".bar")
-    .data(dataSteden)
+    .data(dataGraph)
     .enter().append("rect")
     .attr("class", "bar")
     .attr("x", function (d) {
@@ -240,16 +173,28 @@ function showData(type, maxHotels, textLabel) {
     })
     .attr("width", x.bandwidth())
     .attr("y", height)
-    .attr("rx", 2)
 
     //Tool-tip
     .on("mouseover", function (d) {
-      tooltip.text(" Aantal hotels:" + " " + d.value);
+      tooltip.text(tooltipLabel + ": " + d.value);
       tooltip.style("visibility", "visible");
+    })
+    // Determine which next graph to show on click
+    .on("click", function(d) {
+      if (state==0) {
+        reset();
+        showStarData(d.key)
+        tooltip.remove();
+      }
+      else if (state==1) {
+        reset();
+        showHotelData(currentCity, d.key);
+        tooltip.remove();
+      }
     })
     //Folows cursor
     .on("mousemove", function () {
-      return tooltip.style("top", (d3.event.pageY - 20) + "px").style("left", (d3.event.pageX + 20) + "px");
+      return tooltip.style("top", (d3.event.pageY - 130) + "px").style("left", (d3.event.pageX - 20) + "px");
     })
     .on("mouseout", function () {
       return tooltip.style("visibility", "hidden");
@@ -272,14 +217,108 @@ function showData(type, maxHotels, textLabel) {
     .attr("transform", "translate(0," + height + ")")
     .call(d3.axisBottom(x))
     .selectAll("text")
-    .attr("transform", "rotate(60)")
-    .attr("text-anchor", "start");
+    .attr("transform", "rotate("+rotation+")")
+    .attr("text-anchor", "start")
+    .attr("x", xoffset)
+    .attr("y", yoffset)
+    .style("font-size", "1.1em")
+    .style("text-transform", "lowercase")
+    .style("fill", "white");
 
-  // add the y Axis with ticks amount of rooms
+  // add the y Axis with ticks
   svg.append("g")
-    .call(d3.axisLeft(y));
+    .call(d3.axisLeft(y))
+    .selectAll("text")
+    .style("fill", "white");   
+
+  // Set the title above the graph
+  d3.select("#title")
+    .text(graphTitle);
 }
 
+function showCityData() {
+
+  // Set state and hide back button
+  state = 0;
+  d3.select(".back-button")
+    .style("opacity", "0");
+
+  // Group the data by city and count the number fo hotels per city (rollup)
+  var dataSteden = d3.nest()
+    .key(function (d) {
+      return d.city;
+    })
+    .rollup (function(v) {
+      return v.length;
+    })
+    .entries(data);
+
+  // Create the SVG and shows the graph
+  createGraph(dataSteden, "Cities in the metropolitan region of Amsterdam", "Aantal hotels",10,3,60);
+}
+
+function showStarData(city) {
+
+  // Set the current state, retain the current city and make the back buttons visible
+  state = 1;
+  currentCity = city;
+  d3.select(".back-button")
+  .style("opacity", "1");
+
+  // Filter the data so only the data for the aselected city remains
+  var dataCity = data.filter(function(el) { 
+    return (el.city == city);
+  });
+
+  // Group the data by city and count the number fo hotels per city (rollup)
+  var dataStars = d3.nest()
+    .key(function (d) {
+      return d.stars;
+    })
+    .rollup (function(v) {
+      return v.length;
+    })
+    .entries(dataCity);
+
+  // Add the missing star numbers between 0 and 5
+  var keys=dataStars.map(function(m) { return m.key; });
+  for (var i=0; i<6; i++) {
+    if (keys.indexOf(i.toString())==-1)
+      dataStars.push({key: i.toString(), value: 0});
+  }
+  
+  // Create the SVG and shows the graph
+  createGraph(dataStars, "Star ratings of hotels in " + titleCase(city), "Aantal hotels",-3,10,0);
+}
+
+function showHotelData(city, stars) {
+  
+  // Set state and make button visible
+  state = 2;
+  d3.select(".back-button")
+  .style("opacity", "1");
+
+  // Filter the data so only the data for the selected city and stars remains
+  var dataHotel = data.filter(function(el) { 
+    return (el.city == city && el.stars == stars);
+  });
+
+  dataHotel = d3.nest()
+    .key(function (d) {
+      return d.name;
+    })
+    .entries(dataHotel)
+
+    .map(function (group) {
+      return {
+        key: group.key,
+        value: parseInt(group.values[0]["rooms"])
+      };
+    });
+
+  // Create the SVG and shows the graph
+  createGraph(dataHotel, stars+" star hotels in " + titleCase(city) + " with corresponding amount of rooms", "Kamers",10,3,60);
+}
 
 // Initialize app
 init();
