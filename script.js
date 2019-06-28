@@ -1,25 +1,26 @@
+// Define margins and the size of the canvas
 var margin = {
-    top: 20,
-    right: 20,
+    top: 40,
+    right: 40,
     bottom: 30,
-    left: 40
+    left: 80
   },
 
-
-// Define the canvas dimensions, so data is transformed to the canvas instead of the other way around.
   width = 1000 - margin.left - margin.right,
   height = 500 - margin.top - margin.bottom;
-
 
 // Define how the data (domain) needs to be transformed into a new interval (range)
 var x = d3.scaleBand().range([0, width]).padding(0.1);
 var y = d3.scaleLinear().range([height, 0]);
 
+// Global variable containing loaded and transformed data
+var data;
 
-// create necessary variables 
-var data = [];
-var state = 0;
-var currentCity = "";
+// Global variable containing the current state
+var state;
+
+// Global variable containing the selected city
+var currentCity;
 
 // Init loads the first visualisation state. Number of hotels per city will be shown.
 function init() {
@@ -28,14 +29,13 @@ function init() {
   loadData();
 }
 
-// Create EventListers to make sure data can be modified when a button is pressed.
+// Create EventListener to make sure we can go up one level
 function setEventListener() {
 
   //Go back one state, when button is clicked.
   d3.select('.back-button').on('click', 
     function () 
     {
-      console.log(state);
       if (state == 1)
       {
           reset();
@@ -50,18 +50,14 @@ function setEventListener() {
   )
 }
 
+// Kill the svg to make room for a new graph
 function reset() {
-
-  // Kill the svg to make room for a new graph
   d3.select('section').selectAll('svg')
-    .remove()
-    .exit();
-
+    .remove();
 }
 
-
+// Load textfile hotels.txt 
 function loadData() {
-  // Select textfile hotels.txt and store it's value in variable text. 
   // Callback function will transform the data and show the initial graph
   d3.text('hotels.txt').get(function(err,text)
   {
@@ -84,15 +80,15 @@ function prepareData(err, text) {
   // var with parsed data 
   var parsed = parser.parse(text);
 
-  // I will map the data to objects containing three elements: star, rooms, name. I will filter all the unnecessary elements from the dataset.
+  // I will map the data to objects containing three elements: star, rooms, name and city. I will filter all the unnecessary elements from the dataset.
   // Make a var filled with all the wanted objects.
   var mapped = parsed  
     // Search for data with the matching conditions to be added to 'mapped'
     .filter(
         function (row)
         {
-          // remove items that have an empty city
-          if (row['plaats'].replace(/^\s+|\s+$/gm,'')=='')
+          // remove items that have an empty city (remove empty rows)
+          if (row['plaats']=='')
             return false;
           else
             return true;
@@ -111,23 +107,25 @@ function prepareData(err, text) {
         }
       )
 
-  // This is the data we're going to use for all graphs
+  // This is the data we're going to use for all graphs, stored in global variable data.
   data = mapped;
 
   // Output to console to see if we're done it correctly
   console.log(data);
 }
 
+// Utility: Changes a string to have an initial capital and lower case for the rest (used for formatting city names)
 function titleCase(value) {
   return value.charAt(0).toUpperCase() + value.substr(1).toLowerCase();
 }
 
-function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rotation) {
+// Updates the UI elements and creates and shows the graph
+function updateUI(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rotation) {
 
   // Shows the data we're using for this graph on the console
   console.log(dataGraph);
 
-  // Sort aray in place by key
+  // Sort array in place by key
   dataGraph.sort(function(a,b) {
     if (a.key<b.key)
       return -1;
@@ -179,11 +177,11 @@ function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rota
       tooltip.text(tooltipLabel + ": " + d.value);
       tooltip.style("visibility", "visible");
     })
-    // Determine which next graph to show on click
+    // Determine which next graph to show on click, based on value of global var state
     .on("click", function(d) {
       if (state==0) {
         reset();
-        showStarData(d.key)
+        showStarData(d.key);
         tooltip.remove();
       }
       else if (state==1) {
@@ -194,14 +192,13 @@ function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rota
     })
     //Folows cursor
     .on("mousemove", function () {
-      return tooltip.style("top", (d3.event.pageY - 130) + "px").style("left", (d3.event.pageX - 20) + "px");
+      return tooltip.style("top", (d3.event.pageY - 90) + "px").style("left", (d3.event.pageX + 20) + "px");
     })
     .on("mouseout", function () {
       return tooltip.style("visibility", "hidden");
     })
+    
     //Intro transition
-    .attr("height", 0)
-
     .transition()
     .duration(900)
     .attr("y", function (d) {
@@ -209,7 +206,7 @@ function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rota
     })
     .attr("height", function (d) {
       return height - y(d.value);
-    })
+    });
 
   // add the x Axis
   svg.append("g")
@@ -234,14 +231,15 @@ function createGraph(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rota
   // Set the title above the graph
   d3.select("#title")
     .text(graphTitle);
+  // Only show the back button if state!=0 
+  d3.select(".back-button")
+    .style("opacity", (state==0)?"0":"1");
 }
 
 function showCityData() {
 
-  // Set state and hide back button
+  // Set state
   state = 0;
-  d3.select(".back-button")
-    .style("opacity", "0");
 
   // Group the data by city and count the number of hotels per city (rollup)
   var dataSteden = d3.nest()
@@ -254,23 +252,21 @@ function showCityData() {
     .entries(data);
 
   // Create the SVG and shows the graph
-  createGraph(dataSteden, "Cities in the metropolitan region of Amsterdam", "Aantal hotels",10,3,60);
+  updateUI(dataSteden, "Cities in the metropolitan region of Amsterdam", "Aantal hotels",10,3,60);
 }
 
 function showStarData(city) {
 
-  // Set the current state, retain the current city and make the back buttons visible
+  // Set the current state, retain the current city
   state = 1;
   currentCity = city;
-  d3.select(".back-button")
-  .style("opacity", "1");
 
   // Filter the data so only the data for the selected city remains
-  var dataCity = data.filter(function(el) { 
-    return (el.city == city);
+  var dataCity = data.filter(function (d) { 
+    return (d.city == city);
   });
 
-  // Group the data by city and count the number fo hotels per city (rollup)
+  // Group the data by star rating and count the number fo hotels per star rating (rollup)
   var dataStars = d3.nest()
     .key(function (d) {
       return d.stars;
@@ -288,36 +284,33 @@ function showStarData(city) {
   }
   
   // Create the SVG and shows the graph
-  createGraph(dataStars, "Star ratings of hotels in " + titleCase(city), "Aantal hotels",-3,10,0);
+  updateUI(dataStars, "Star ratings of hotels in " + titleCase(city), "Aantal hotels",-3,10,0);
 }
 
 function showHotelData(city, stars) {
   
-  // Set state and make button visible
+  // Set state
   state = 2;
-  d3.select(".back-button")
-  .style("opacity", "1");
 
   // Filter the data so only the data for the selected city and stars remains
-  var dataHotel = data.filter(function(el) { 
-    return (el.city == city && el.stars == stars);
+  var dataHotel = data.filter(function (d) { 
+    return (d.city == city && d.stars == stars);
   });
 
   dataHotel = d3.nest()
     .key(function (d) {
       return d.name;
     })
-    .entries(dataHotel)
-
     .map(function (group) {
       return {
         key: group.key,
         value: parseInt(group.values[0]["rooms"])
       };
-    });
+    })
+    .entries(dataHotel);
 
   // Create the SVG and shows the graph
-  createGraph(dataHotel, stars+" star hotels in " + titleCase(city) + " with corresponding amount of rooms", "Kamers",10,3,60);
+  updateUI(dataHotel, stars+" star hotels in " + titleCase(city) + " with corresponding amount of rooms", "Kamers",10,3,60);
 }
 
 // Initialize app
