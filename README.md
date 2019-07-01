@@ -4,7 +4,7 @@ Resit of the frontend course Functional Programming
 ## The Visualisation
 I chose to create a visualisation that shows the amount of hotels in the metropolitan region of Amsterdam. The presented graph contains three states that are all showing its own information. Every new state explores a deeper layer of data.
 
-A working version can be found <a href="https://pimjenniskens.github.io/funtional-programming/" target="_blank">here</a>
+A working version can be found <a href="https://pimjenniskens.github.io/functional-programming/" target="_blank">here</a>
 
 <img src="img/state1.png">
 
