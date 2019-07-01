@@ -1,7 +1,7 @@
 // Define margins and the size of the canvas
 var margin = {
     top: 40,
-    right: 40,
+    right: 80,
     bottom: 30,
     left: 80
   },
@@ -143,7 +143,7 @@ function updateUI(dataGraph, graphTitle, tooltipLabel, xoffset, yoffset, rotatio
   // Scale the range of the y-as to the maximum value in the dataset
   y.domain([0, d3.max(dataGraph, function (d) {
     return d.value;
-    // return (d.value>50?50:d.value);
+    // return (d.value>50?500:d.value);
   })]);
 
   // append the svg object to the body of the page
@@ -301,13 +301,14 @@ function showHotelData(city, stars) {
     .key(function (d) {
       return d.name;
     })
+    .entries(dataHotel)
+    
     .map(function (group) {
       return {
         key: group.key,
         value: parseInt(group.values[0]["rooms"])
       };
-    })
-    .entries(dataHotel);
+    });
 
   // Create the SVG and shows the graph
   updateUI(dataHotel, stars+" star hotels in " + titleCase(city) + " with corresponding amount of rooms", "Kamers",10,3,60);
